@@ -1,6 +1,6 @@
 /*
 Author: Kevin Kan
-Version 2.2 pin fixes
+Version 2.3 Arrayfix
 Title: Master mind game for Arduino.*/
 
 /*Function Codes
@@ -9,6 +9,15 @@ Serial.print(results.value,HEX) prints the results in HEX
 results.value summons the results of the romote.*/
 /* pins 1-7 control rows(through resistors) board wiring 6,1,7,3,8,14,9, 8-11 control columbs board wiring 10,4,5,13 bottom KLM
 left side is tape pin 12 is (left bubble facing you?) IR reciver*/
+/* For Kit Remote CR2025 Codes are
+1=FD08F7,16582903
+2=FD8877,16615543
+3=FD48B7,16599223
+4=FD28D7,16591063
+5=,16623703
+6=,16607383
+repeat=FFFFFFFF
+*/
 
 #include <IRremote.h>
 
@@ -31,14 +40,6 @@ const int WIN_COND=4;
 /*--------------------------------------------PROGRAM SETUP-----------------------------------------*/
 void setup()
 {
-/*  for (int a=7; a<12; a++)
-    {
-      col[a]=a;
-    }
-  for (int b =0; b<8; b++)
-    {
-      row[b]=b;
-    }*/
   int c;
   int r;
   Serial.begin(9600);
@@ -48,25 +49,31 @@ void setup()
     col[c]=c;
     pinMode(c, OUTPUT);
     digitalWrite(c, LOW);
-    Serial.println(col[c]);
   }
   for(r = 0; r<8; r++)
   {
     row[r]=r;
     pinMode(r,OUTPUT);
     digitalWrite(r,HIGH);
-    Serial.println(row[r]);
   }
   randomSeed(0); 
 }
-
+/*---------------------------------selecition light function----------------------------------------*/
+void light()
+{
+      digitalWrite(8,HIGH);
+      digitalWrite(1,LOW);
+      delay(100);
+      digitalWrite(8,LOW);
+      digitalWrite(7,HIGH);
+}
 /*---------------------------------------Display on the Matrix------------------------------------------*/
 
-void Matrix(int arrayOn[7][4])
+void Matrix(int arrayOn[7][4],int wait,int wait2)
 {
-  for(int a = 1; a<8; a++)
+  for(int a = 0; a<8; a++)
   {
-     row[a]=a;
+     row[a]=a+1;
   }
   for (int b = 0; b < 4; b++)
     {
@@ -75,17 +82,18 @@ void Matrix(int arrayOn[7][4])
   for(int r = 0; r<7; r++)
   {
     for (int c = 0; c < 4; c++)
-    {
+    {//Serial.print (arrayOn[r][c]);// more debugging stuff
       if(arrayOn[r][c]!=0)
       { 
         digitalWrite(col[c],HIGH);
         digitalWrite(row[r],LOW);
-        delay(10);
+        delay(wait);
         digitalWrite(col[c],LOW);
         digitalWrite(row[r],HIGH);
       }
     }
   }
+  delay(wait2);
 }
 
 /*--------------------------------------------MAIN PROGRAM------------------------------------------------*/
@@ -100,48 +108,34 @@ void loop()
   {
     randomSeed(0);
     answerKey[g]=random(1,6);
-     Serial.print(answerKey[g]);
+     //Serial.print(answerKey[g]);//uncomment previous for debugging
   }
-      for(int x1=0; x1<ATTEMPTS; x1++)
+      for(int x1=0; x1<=ATTEMPTS+1; x1++)
     {
       for( int y1=0; y1<=CODE; y1++)
       {
         show[x1][y1]=1; 
-       lastShow[x1][y1]=1; 
       }
-    } 
-    Matrix(show);
-    for(int x=0; x<ATTEMPTS; x++)
+    }
+    Matrix(show,5,0);
+    for(int x=0; x<ATTEMPTS+1; x++)
     {
       for( int y=0; y<CODE+1; y++)
       {
-        show[x][y]=0; 
-       lastShow[x][y]=0; 
+        show[x][y]=0;  
       }
     } 
-      digitalWrite(8,HIGH);
-      digitalWrite(7,LOW);
-      delay(100);
-      digitalWrite(8,LOW);
-      digitalWrite(7,HIGH);
-    /* For Kit Remote CR2025 Codes are
-1=FD08F7,16582903
-2=FD8877,16615543
-3=FD48B7,16599223
-4=FD28D7,16591063
-5=,16623703
-6=,16607383
-repeat=FFFFFFFF
-  */
   vic=0;
+  int displayMod;
   while(game<ATTEMPTS && vic<4)
   {
     vic=1;
     //static byte last; // Stores last decoded result in case the remote control sends repeat code.
     count=0;
-    Matrix(show);
+ 
     while(count<=CODE)
     {
+      displayMod=vic-1;
       if (irrecv.decode(&results))
       { //Decode the Ir into appropriate numbers
         guess=0;
@@ -150,7 +144,6 @@ repeat=FFFFFFFF
           guess=1;
               if(guess == answerKey[count])//check against answerKey
               {
-                show[game][count]=1;
                 vic=vic+1;
                }
               count=count+1;
@@ -158,13 +151,13 @@ repeat=FFFFFFFF
               Serial.println(count);
               Serial.print("You guessed :");
               Serial.println(guess);
+              light();
         }
         if((results.value) ==16615543)
         {
           guess=2;
               if(guess == answerKey[count])//check against answerKey
               {
-                show[game][count]=1;
                 vic=vic+1;
                 }
               count=count+1;
@@ -172,13 +165,13 @@ repeat=FFFFFFFF
               Serial.println(count);
               Serial.print("You guessed :");
               Serial.println(guess);
+              light();
         }
         if(results.value ==16599223)
         {
           guess=3;
           if(guess == answerKey[count])//check against answerKey
             {
-              show[game][count]=1;
               vic=vic+1;
               }
               count=count+1;
@@ -186,13 +179,13 @@ repeat=FFFFFFFF
               Serial.println(count);
               Serial.print("You guessed :");
               Serial.println(guess);
+              light();
         }
         if(results.value ==16591063)
         {
           guess=4;
           if(guess == answerKey[count])//check against answerKey
           {
-            show[game][count]=1;
             vic=vic+1;
             }
             count=count+1;
@@ -200,59 +193,65 @@ repeat=FFFFFFFF
             Serial.println(count);
             Serial.print("You guessed :");
             Serial.println(guess);
+            light();
         }
         if(results.value ==16623703)
         {
           guess=5;
           if(guess == answerKey[count])//check against answerKey
           {
-            show[game][count]=1;
             vic=vic+1;
             }
             count=count+1;
             Serial.print("For your guess number: ");
             Serial.println(count);
             Serial.print("You guessed :");
-            Serial.println(guess);         
+            Serial.println(guess);  
+            light();       
         }
         if (results.value== 16607383)
         {
           guess=6; 
           if(guess == answerKey[count])//check against answerKey
           {
-            show[game][count]=1;
             vic=vic+1;
             }
             count=count+1;
             Serial.print("For your guess number: ");
             Serial.println(count);
             Serial.print("You guessed :");
-            Serial.println(guess);           
+            Serial.println(guess);      
+            light();     
         }
          irrecv.resume();
        
       } 
-      if (count<CODE)
-      {
-        Matrix(lastShow);
-      }
-      else{
-        Matrix(show);
-        for (int t=0; t<=CODE; t++)
-        {
-          lastShow[game][t]=show[game][t]; 
-        }
-      }
-      
     }
     Serial.print("You have ");
     Serial.print(vic); 
     Serial.println(" correct.");
+    for(int w=0; w<vic; w++)
+    {
+      show[game][w]=1;
+    }
     game=game+1;
-    //Call Matrix(int show) 
+    for (int rep=0;rep<40;rep++){
+      Matrix(show,1,0);//Call Matrix(int show) 
+    }  
   }
   if (vic >= WIN_COND)
   {
+   for(int xw=0; xw<=ATTEMPTS+1; xw++)
+    {
+      for( int yw=0; yw<=CODE; yw++)
+      {
+        show[xw][yw]=1; 
+      }
+    }
+  for(int q=0; q<=30; q++)
+    {
+      Matrix(show,5,5);
+    }
     Serial.println("You Win");
 
   }
@@ -265,5 +264,9 @@ repeat=FFFFFFFF
       Serial.print(answerKey[l]);
     }
     Serial.println("");
+     for(int z=0; z<=10; z++)
+    {
+      Matrix(show,5,250);
+    }
   }
 }
