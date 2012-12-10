@@ -27,14 +27,12 @@ decode_results results;
 int col[4];
 int row[7];
 //int show[7][4];
-int answerKey[4];
-int guess;
 int ATTEMPTS = 7;
 int CODE=3;
 int count;//This varible controls the columbs and is the combination number.
 int game;//This varible controls the rows and is the counter to number of attempts per game
 int vic;
-const int WIN_COND=4;
+const int WIN_COND=3;
 
 
 /*--------------------------------------------PROGRAM SETUP-----------------------------------------*/
@@ -102,15 +100,17 @@ void loop()
   Serial.println("Welcome to Mastermind");
   Serial.println("Please choose a number from 1-6");
   game=0;
+  int answerKey[4];
   int show[7][4];
   int lastShow[7][4];
+  int guess[4];
   for (int g=0; g<4; g++)
   {
     randomSeed(0);
     answerKey[g]=random(1,6);
-     //Serial.print(answerKey[g]);//uncomment previous for debugging
+    // Serial.print(ansewrKey[g]);//uncomment previous for debugging
   }
-      for(int x1=0; x1<=ATTEMPTS+1; x1++)
+      for(int x1=0; x1<ATTEMPTS; x1++)
     {
       for( int y1=0; y1<=CODE; y1++)
       {
@@ -118,7 +118,7 @@ void loop()
       }
     }
     Matrix(show,5,0);
-    for(int x=0; x<ATTEMPTS+1; x++)
+    for(int x=0; x<ATTEMPTS; x++)
     {
       for( int y=0; y<CODE+1; y++)
       {
@@ -129,119 +129,106 @@ void loop()
   int displayMod;
   while(game<ATTEMPTS && vic<4)
   {
-    vic=1;
+    vic=0;
     //static byte last; // Stores last decoded result in case the remote control sends repeat code.
     count=0;
  
     while(count<=CODE)
     {
-      displayMod=vic-1;
+      
       if (irrecv.decode(&results))
       { //Decode the Ir into appropriate numbers
-        guess=0;
+        
         if(results.value== 16582903)
         {
-          guess=1;
-              if(guess == answerKey[count])//check against answerKey
-              {
-                vic=vic+1;
-               }
+          guess[count]=1;
               count=count+1;
               Serial.print("For your guess number: ");
               Serial.println(count);
               Serial.print("You guessed :");
-              Serial.println(guess);
+              Serial.println('1');
               light();
         }
         if((results.value) ==16615543)
         {
-          guess=2;
-              if(guess == answerKey[count])//check against answerKey
-              {
-                vic=vic+1;
-                }
+          guess[count]=2;
               count=count+1;
               Serial.print("For your guess number: ");
               Serial.println(count);
               Serial.print("You guessed :");
-              Serial.println(guess);
+              Serial.println('2');
               light();
         }
         if(results.value ==16599223)
         {
-          guess=3;
-          if(guess == answerKey[count])//check against answerKey
-            {
-              vic=vic+1;
-              }
+          guess[count]=3;
               count=count+1;
               Serial.print("For your guess number: ");
               Serial.println(count);
               Serial.print("You guessed :");
-              Serial.println(guess);
+              Serial.println('3');
               light();
         }
         if(results.value ==16591063)
         {
-          guess=4;
-          if(guess == answerKey[count])//check against answerKey
-          {
-            vic=vic+1;
-            }
+          guess[count]=4;
+  
             count=count+1;
             Serial.print("For your guess number: ");
             Serial.println(count);
             Serial.print("You guessed :");
-            Serial.println(guess);
+            Serial.println('4');
             light();
         }
         if(results.value ==16623703)
         {
-          guess=5;
-          if(guess == answerKey[count])//check against answerKey
-          {
-            vic=vic+1;
-            }
+          guess[count]=5;
             count=count+1;
             Serial.print("For your guess number: ");
             Serial.println(count);
             Serial.print("You guessed :");
-            Serial.println(guess);  
+            Serial.println('5');  
             light();       
         }
         if (results.value== 16607383)
         {
-          guess=6; 
-          if(guess == answerKey[count])//check against answerKey
-          {
-            vic=vic+1;
-            }
+          guess[count]=6; 
             count=count+1;
             Serial.print("For your guess number: ");
             Serial.println(count);
             Serial.print("You guessed :");
-            Serial.println(guess);      
+            Serial.println('6');      
             light();     
         }
          irrecv.resume();
        
       } 
     }
-    Serial.print("You have ");
-    Serial.print(vic); 
-    Serial.println(" correct.");
-    for(int w=0; w<vic; w++)
+    for(int ch=0;ch<4;ch++)
     {
-      show[game][w]=1;
+       if(guess[ch] == answerKey[ch])//check against answerKey
+              {
+                vic=vic+1;
+                }
     }
-    game=game+1;
-    for (int rep=0;rep<40;rep++){
-      Matrix(show,1,0);//Call Matrix(int show) 
+    displayMod=vic;
+    if (vic!=4){
+      Serial.print("You have ");
+      Serial.print(displayMod); 
+      Serial.println(" correct.");
+      for(int w=0; w<vic; w++)
+      {
+        show[game][w]=1;
+      }
+      game=game+1;
+      for (int rep=0;rep<20;rep++){
+        Matrix(show,1,0);//Call Matrix(int show) 
+      }  
     }  
   }
-  if (vic >= WIN_COND)
+  if (vic > WIN_COND)
   {
-   for(int xw=0; xw<=ATTEMPTS+1; xw++)
+   for(int xw=0; xw<ATTEMPTS; xw++)
     {
       for( int yw=0; yw<=CODE; yw++)
       {
@@ -255,7 +242,7 @@ void loop()
     Serial.println("You Win");
 
   }
-  if(vic < WIN_COND)
+  if(vic <= WIN_COND)
   {
     Serial.println("You Lose");
     Serial.print("The answer was : ");
